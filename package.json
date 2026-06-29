@@ -54,7 +54,7 @@
     },
     "publish": {
       "provider": "github",
-      "owner": "ТВОЙ_GITHUB_USERNAME",
+      "owner": "prstkt1",
       "repo": "gps-video-overlay",
       "releaseType": "release"
     },
