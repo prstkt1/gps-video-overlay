@@ -1,0 +1,47 @@
+{
+  "name": "gps-video-overlay",
+  "productName": "GPS Video Overlay",
+  "version": "1.0.0",
+  "description": "Add GPS speedometer overlays to GoPro, DJI and Sony action camera videos",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "set NODE_ENV=development && electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win --x64"
+  },
+  "dependencies": {
+    "electron-store": "^8.2.0",
+    "ffmpeg-static": "^5.2.0",
+    "ffprobe-static": "^3.1.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "gpmf-extract": "^0.3.3",
+    "gopro-telemetry": "^1.2.11"
+  },
+  "devDependencies": {
+    "electron": "^28.1.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.gpsvideooverlay.app",
+    "productName": "GPS Video Overlay",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.icns"
+    },
+    "linux": {
+      "target": "AppImage"
+    },
+    "directories": {
+      "output": "dist"
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**",
+      "node_modules/ffprobe-static/**"
+    ]
+  }
+}
