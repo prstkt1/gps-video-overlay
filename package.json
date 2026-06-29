@@ -1,7 +1,7 @@
 {
   "name": "gps-video-overlay",
   "productName": "GPS Video Overlay",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "description": "Add GPS speedometer overlays to GoPro, DJI and Sony action camera videos",
   "author": "GPS Video Overlay",
   "main": "main.js",
