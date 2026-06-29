@@ -11,6 +11,25 @@
 </head>
 <body>
   <!-- ═══════════════════════════════════════════════ HEADER ══ -->
+  
+  <!-- ═══════════════════════════════════════════════ UPDATE BANNER ══ -->
+  <div id="update-banner" class="update-banner hidden">
+    <div class="update-banner-content">
+      <span id="update-icon" class="update-icon">🔄</span>
+      <span id="update-text">Проверяю обновления…</span>
+      <div id="update-progress-wrap" class="update-progress-wrap hidden">
+        <div class="update-progress-bg">
+          <div id="update-progress-fill" class="update-progress-fill"></div>
+        </div>
+      </div>
+    </div>
+    <div class="update-actions">
+      <button id="btn-update-download" class="btn-update-action hidden">Загрузить</button>
+      <button id="btn-update-install"  class="btn-update-action btn-update-install hidden">Установить и перезапустить</button>
+      <button id="btn-update-dismiss"  class="btn-update-dismiss">✕</button>
+    </div>
+  </div>
+
   <header class="app-header">
     <div class="header-logo">
       <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -344,5 +363,6 @@
   <script src="js/gps.js"></script>
   <script src="js/export.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/updater.js"></script>
 </body>
 </html>

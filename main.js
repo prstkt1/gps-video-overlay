@@ -45,6 +45,16 @@ const store = new Store({ defaults: {
   lastDir: ''
 }});
 
+// ─── Auto updater ────────────────────────────────────────────────────────────
+let autoUpdater = null;
+try {
+  autoUpdater = require('electron-updater').autoUpdater;
+  autoUpdater.autoDownload         = false;   // manual trigger from UI
+  autoUpdater.autoInstallOnAppQuit = true;
+} catch {
+  // Not available in dev / first install
+}
+
 // ─── Active export state ─────────────────────────────────────────────────────
 let exportProcess = null;
 let mainWindow    = null;
@@ -65,7 +75,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      webSecurity: false
+      webSecurity: false     // allow loading local file:// video
     }
   });
 
@@ -81,6 +91,11 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   app.on('activate', () => { if (!mainWindow) createWindow(); });
+
+  // Check for updates 3 seconds after window is ready (non-blocking)
+  if (autoUpdater && process.env.NODE_ENV !== 'development') {
+    setTimeout(() => setupAutoUpdater(), 3000);
+  }
 });
 
 app.on('window-all-closed', () => {
@@ -134,12 +149,12 @@ ipcMain.handle('settings:get',    (_, key)      => store.get(key));
 ipcMain.handle('settings:getAll', ()            => store.store);
 ipcMain.handle('settings:set',    (_, key, val) => { store.set(key, val); });
 
-// Video info
+// ── Video info ────────────────────────────────────────────────────────────────
 ipcMain.handle('video:info', async (_, videoPath) => {
   return getVideoInfo(videoPath);
 });
 
-// GPS extraction
+// ── GPS extraction ────────────────────────────────────────────────────────────
 ipcMain.handle('gps:extract', async (_, videoPath) => {
   try {
     const gpsData = await extractGPS(videoPath);
@@ -159,10 +174,10 @@ ipcMain.handle('gps:parseGPX', async (_, gpxPath) => {
   }
 });
 
-// Shell
+// ── Shell ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('shell:openPath', (_, p) => shell.openPath(p));
 
-// Export
+// ── Export ────────────────────────────────────────────────────────────────────
 ipcMain.handle('export:start', async (_, options) => {
   return runExport(options);
 });
@@ -174,7 +189,9 @@ ipcMain.on('export:cancel', () => {
   }
 });
 
+// ═════════════════════════════════════════════════════════════════════════════
 // GPS Extraction
+// ═════════════════════════════════════════════════════════════════════════════
 
 async function extractGPS(videoPath) {
   // 1. Try GoPro GPMF (Hero, MAX, etc.)
@@ -344,7 +361,7 @@ function parseGPX(xml) {
     points.push({
       timestamp: ms && base ? (ms - base) / 1000 : points.length,
       lat, lon, alt,
-      speed: 0 
+      speed: 0   // will be computed below
     });
   }
 
@@ -511,4 +528,71 @@ async function runExport(options) {
     // Cleanup temp frames
     try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
   }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Auto Updater
+// ═════════════════════════════════════════════════════════════════════════════
+
+function setupAutoUpdater() {
+  if (!autoUpdater) return;
+
+  // ── Events → renderer ─────────────────────────────────────────────────────
+  autoUpdater.on('checking-for-update', () => {
+    mainWindow?.webContents.send('updater:status', {
+      type: 'checking',
+      msg:  'Проверяю обновления…'
+    });
+  });
+
+  autoUpdater.on('update-available', info => {
+    mainWindow?.webContents.send('updater:status', {
+      type:    'available',
+      msg:     `Доступна версия ${info.version}`,
+      version: info.version,
+      notes:   info.releaseNotes || ''
+    });
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    mainWindow?.webContents.send('updater:status', {
+      type: 'up-to-date',
+      msg:  'Установлена последняя версия'
+    });
+  });
+
+  autoUpdater.on('download-progress', progress => {
+    mainWindow?.webContents.send('updater:status', {
+      type:    'downloading',
+      msg:     `Загрузка… ${Math.round(progress.percent)}%`,
+      percent: progress.percent,
+      speed:   Math.round(progress.bytesPerSecond / 1024)  // KB/s
+    });
+  });
+
+  autoUpdater.on('update-downloaded', info => {
+    mainWindow?.webContents.send('updater:status', {
+      type:    'downloaded',
+      msg:     `Версия ${info.version} готова к установке`,
+      version: info.version
+    });
+  });
+
+  autoUpdater.on('error', err => {
+    mainWindow?.webContents.send('updater:status', {
+      type: 'error',
+      msg:  'Ошибка обновления: ' + (err.message || String(err))
+    });
+  });
+
+  // ── IPC ───────────────────────────────────────────────────────────────────
+  ipcMain.handle('updater:check',    () => autoUpdater.checkForUpdates());
+  ipcMain.handle('updater:download', () => autoUpdater.downloadUpdate());
+  ipcMain.handle('updater:install',  () => {
+    autoUpdater.quitAndInstall(false, true);
+  });
+  ipcMain.handle('updater:version',  () => app.getVersion());
+
+  // Run first check
+  autoUpdater.checkForUpdates().catch(() => {});
 }

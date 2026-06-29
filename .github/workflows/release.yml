@@ -1,0 +1,53 @@
+name: Build & Release
+
+# Запускается когда пушишь тег вида v1.2.3
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    steps:
+      # 1. Получить код
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Установить Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Установить зависимости
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Записать версию из тега в package.json
+      - name: Set version from tag
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          npm version "$TAG" --no-git-tag-version
+          echo "Building version $TAG"
+
+      # 5. Собрать NSIS-установщик и опубликовать в GitHub Releases
+      - name: Build & Publish
+        run: npm run release
+        env:
+          # Токен создаётся автоматически GitHub Actions — добавлять вручную не нужно
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 6. Загрузить артефакты для ручной проверки
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/*.exe
+            dist/*.yml
+          retention-days: 7

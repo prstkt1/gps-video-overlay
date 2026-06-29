@@ -1,2 +1,12 @@
-/node_modules
-package-lock.json
+node_modules/
+dist/
+.DS_Store
+*.log
+npm-debug.log*
+
+# Electron builder cache
+.electron-builder-cache/
+
+# Local env
+.env
+.env.local

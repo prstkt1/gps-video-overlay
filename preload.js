@@ -2,7 +2,6 @@
 
 const { contextBridge, ipcRenderer } = require('electron');
 
-// Expose a safe subset of Electron APIs to the renderer
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── Dialogs ──────────────────────────────────────────────────────────────
   openVideoDialog:  ()              => ipcRenderer.invoke('dialog:openVideo'),
@@ -30,6 +29,19 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('export:progress', handler);
     return () => ipcRenderer.removeListener('export:progress', handler);
+  },
+
+  // ── Auto updater ──────────────────────────────────────────────────────────
+  updater: {
+    check:    ()   => ipcRenderer.invoke('updater:check'),
+    download: ()   => ipcRenderer.invoke('updater:download'),
+    install:  ()   => ipcRenderer.invoke('updater:install'),
+    version:  ()   => ipcRenderer.invoke('updater:version'),
+    onStatus: (cb) => {
+      const handler = (_, data) => cb(data);
+      ipcRenderer.on('updater:status', handler);
+      return () => ipcRenderer.removeListener('updater:status', handler);
+    }
   },
 
   // ── Shell ─────────────────────────────────────────────────────────────────

@@ -3,15 +3,18 @@
   "productName": "GPS Video Overlay",
   "version": "1.0.0",
   "description": "Add GPS speedometer overlays to GoPro, DJI and Sony action camera videos",
+  "author": "GPS Video Overlay",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
     "dev": "set NODE_ENV=development && electron .",
-    "pack": "electron-builder --dir",
-    "dist": "electron-builder --win --x64"
+    "pack": "set CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --dir",
+    "dist": "set CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win --x64",
+    "release": "electron-builder --win --x64 --publish always"
   },
   "dependencies": {
     "electron-store": "^8.2.0",
+    "electron-updater": "^6.1.7",
     "ffmpeg-static": "^5.2.0",
     "ffprobe-static": "^3.1.0",
     "fluent-ffmpeg": "^2.1.2",
@@ -25,23 +28,54 @@
   "build": {
     "appId": "com.gpsvideooverlay.app",
     "productName": "GPS Video Overlay",
+    "copyright": "Copyright © 2025",
     "win": {
-      "target": "nsis",
-      "icon": "assets/icon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icon.ico",
+      "sign": null,
+      "signingHashAlgorithms": null,
+      "certificateFile": null,
+      "certificatePassword": null
     },
-    "mac": {
-      "target": "dmg",
-      "icon": "assets/icon.icns"
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GPS Video Overlay",
+      "deleteAppDataOnUninstall": false
     },
-    "linux": {
-      "target": "AppImage"
+    "publish": {
+      "provider": "github",
+      "owner": "ТВОЙ_GITHUB_USERNAME",
+      "repo": "gps-video-overlay",
+      "releaseType": "release"
     },
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "asarUnpack": [
       "node_modules/ffmpeg-static/**",
       "node_modules/ffprobe-static/**"
+    ],
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*",
+      "!node_modules/electron/**",
+      "!node_modules/electron-builder/**",
+      "!**/*.map",
+      "!**/*.md"
     ]
   }
 }
