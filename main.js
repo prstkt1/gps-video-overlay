@@ -197,19 +197,24 @@ ipcMain.on('export:cancel', () => {
 // ═════════════════════════════════════════════════════════════════════════════
 
 async function extractGPS(videoPath) {
-  // 1. Try GoPro GPMF (Hero, MAX, etc.)
+  const errors = [];
+
   try {
     const gps = await extractGoproGPMF(videoPath);
     if (gps && gps.length > 2) return gps;
-  } catch (e) { /* fall through */ }
+    errors.push('GPMF: трек найден, но меньше 3 точек');
+  } catch (e) { errors.push('GPMF: ' + e.message); }
 
-  // 2. Try subtitle / metadata stream (DJI SRT, Sony RTMD text)
   try {
     const gps = await extractSubtitleGPS(videoPath);
     if (gps && gps.length > 2) return gps;
-  } catch (e) { /* fall through */ }
+    errors.push('SRT: трек найден, но меньше 3 точек');
+  } catch (e) { errors.push('SRT: ' + e.message); }
 
-  throw new Error('No GPS data found in this file. Try importing a .gpx track instead.');
+  throw new Error(
+    'No GPS data found in this file. Try importing a .gpx track instead.\n' +
+    errors.join(' | ')
+  );
 }
 
 // ── GoPro GPMF ───────────────────────────────────────────────────────────────
