@@ -16,6 +16,8 @@
     videoPath:    null,
     videoInfo:    null,
     gpsLoaded:    false,
+    volume: 1.0,   // 0..1 — только превью, на экспорт не влияет
+    muted:  false,
 
     // Overlay config (mirrors what overlays.js / export.js need)
     style:          'analog',
@@ -71,6 +73,10 @@
     timeCurrent:    $('time-current'),
     timeTotal:      $('time-total'),
     btnPlay:        $('btn-play'),
+    btnMute:        $('btn-mute'),
+    iconVolOn:      $('icon-vol-on'),
+    iconVolOff:     $('icon-vol-off'),
+    sliderVolume:   $('slider-volume'),
     iconPlay:       $('icon-play'),
     iconPause:      $('icon-pause'),
     liveSpeed:      $('live-speed'),
@@ -113,20 +119,23 @@
   // Init — load persisted settings
   // ═══════════════════════════════════════════════════════════════════════════
   async function init() {
-    const saved = await window.electronAPI.getAllSettings();
-    state.unit          = saved.speedUnit    || 'kmh';
-    state.opacity       = saved.overlayOpacity ?? 0.9;
-    state.size          = saved.overlaySize    ?? 1.0;
-    state.style         = saved.speedometerStyle || 'analog';
-    state.showMinimap   = saved.showMinimap   ?? true;
-    state.showCoords    = saved.showCoords    ?? true;
-    state.showAltitude  = saved.showAltitude  ?? true;
+  const saved = await window.electronAPI.getAllSettings();
+  state.unit          = saved.speedUnit    || 'kmh';
+  state.opacity       = saved.overlayOpacity ?? 0.9;
+  state.size          = saved.overlaySize    ?? 1.0;
+  state.style         = saved.speedometerStyle || 'analog';
+  state.showMinimap   = saved.showMinimap   ?? true;
+  state.showCoords    = saved.showCoords    ?? true;
+  state.showAltitude  = saved.showAltitude  ?? true;
+  state.volume        = saved.previewVolume ?? 1.0;
+  state.muted         = saved.previewMuted  ?? false;
 
-    syncUIToState();
-    drawStylePreviews();
-    bindEvents();
-    bindExportProgress();
-  }
+  syncUIToState();
+  applyVolume();
+  drawStylePreviews();
+  bindEvents();
+  bindExportProgress();
+}
 
   // ═══════════════════════════════════════════════════════════════════════════
   // Sync UI controls → state values
@@ -181,6 +190,17 @@
         document.getElementById('tab-' + tab).classList.add('active');
       });
     });
+
+    // ── Громкость превью ──────────────────────────────────────────────────
+els.sliderVolume.addEventListener('input', () => {
+  state.volume = els.sliderVolume.value / 100;
+  if (state.volume > 0 && state.muted) state.muted = false; // авто-размьют при прибавлении звука
+  window.electronAPI.setSetting('previewVolume', state.volume);
+  window.electronAPI.setSetting('previewMuted', state.muted);
+  applyVolume();
+});
+
+els.btnMute.addEventListener('click', toggleMute);
 
     // ── Open video ────────────────────────────────────────────────────────
     els.btnOpenVideo.addEventListener('click', openVideo);
@@ -326,12 +346,13 @@
     });
 
     // Keyboard shortcuts
-    document.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
-      if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-      if (e.code === 'ArrowRight') seekBy(5);
-      if (e.code === 'ArrowLeft')  seekBy(-5);
-    });
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight') seekBy(5);
+  if (e.code === 'ArrowLeft')  seekBy(-5);
+  if (e.code === 'KeyM')       toggleMute();
+});
 
     // ── Export ────────────────────────────────────────────────────────────
     els.btnExport.addEventListener('click', showExportModal);
@@ -374,7 +395,8 @@
 
     // Set video source
     els.video.src = 'file://' + filePath.replace(/\\/g, '/');
-    await new Promise(r => els.video.addEventListener('loadedmetadata', r, { once: true }));
+applyVolume();
+await new Promise(r => els.video.addEventListener('loadedmetadata', r, { once: true }));
 
     // Fetch video metadata
     const info = await window.electronAPI.getVideoInfo(filePath);
@@ -525,6 +547,23 @@ if (info.error) {
       cancelAnimationFrame(state.rafId);
     }
   }
+
+  function applyVolume() {
+  els.video.volume = state.volume;
+  els.video.muted  = state.muted;
+  els.sliderVolume.value = Math.round(state.volume * 100);
+
+  const isMuted = state.muted || state.volume === 0;
+  els.iconVolOn.classList.toggle('hidden', isMuted);
+  els.iconVolOff.classList.toggle('hidden', !isMuted);
+  els.btnMute.title = isMuted ? 'Включить звук (M)' : 'Без звука (M)';
+}
+
+function toggleMute() {
+  state.muted = !state.muted;
+  window.electronAPI.setSetting('previewMuted', state.muted);
+  applyVolume();
+}
 
   function scheduleRaf() {
     state.rafId = requestAnimationFrame(() => {

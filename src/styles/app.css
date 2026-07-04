@@ -298,6 +298,26 @@ input[type=range] { cursor: pointer; }
 .live-speed-num  { font: 600 22px/1 var(--font-data); color: var(--accent-2); }
 .live-speed-unit { font: 11px/1 var(--font-ui); color: var(--text-muted); }
 
+.volume-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.volume-btn {
+  width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: color .15s, background .15s;
+  flex-shrink: 0;
+}
+.volume-btn:hover { color: var(--text); background: var(--surface-2); }
+.volume-icon { width: 16px; height: 16px; }
+.volume-slider {
+  width: 72px;
+  margin-bottom: 0;
+}
 /* ════════════════════════════════════════════════════════════
    Left Panel Components
    ════════════════════════════════════════════════════════════ */

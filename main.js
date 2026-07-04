@@ -49,6 +49,8 @@ const store = new Store({ defaults: {
   showMinimap: true,
   showCoords: true,
   showAltitude: true,
+  previewVolume: 1.0,   
+  previewMuted: false,  
   lastDir: ''
 }});
 
