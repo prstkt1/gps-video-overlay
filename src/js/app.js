@@ -378,6 +378,10 @@
 
     // Fetch video metadata
     const info = await window.electronAPI.getVideoInfo(filePath);
+if (info.error) {
+  setGpsStatus('error', 'Не удалось прочитать видео: ' + info.error);
+  return;
+}
     state.videoInfo = info;
     updateVideoInfoPanel(info);
 

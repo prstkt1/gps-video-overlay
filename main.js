@@ -16,6 +16,13 @@ let ffmpegPath, ffprobePath;
 try {
   ffmpegPath  = require('ffmpeg-static');
   ffprobePath = require('ffprobe-static').path;
+
+  // electron-builder unpacks these binaries next to app.asar (asarUnpack),
+  // but ffmpeg-static/ffprobe-static don't know that and still return a
+  // path pointing *inside* app.asar — which can't be spawned as a process.
+  // Patch the string to point at the unpacked copy on disk.
+  ffmpegPath  = ffmpegPath.replace('app.asar', 'app.asar.unpacked');
+  ffprobePath = ffprobePath.replace('app.asar', 'app.asar.unpacked');
 } catch {
   // Dev fallback — assume ffmpeg is in PATH
   ffmpegPath  = 'ffmpeg';
@@ -151,7 +158,11 @@ ipcMain.handle('settings:set',    (_, key, val) => { store.set(key, val); });
 
 // ── Video info ────────────────────────────────────────────────────────────────
 ipcMain.handle('video:info', async (_, videoPath) => {
-  return getVideoInfo(videoPath);
+  try {
+    return await getVideoInfo(videoPath);
+  } catch (err) {
+    return { error: err.message };
+  }
 });
 
 // ── GPS extraction ────────────────────────────────────────────────────────────
