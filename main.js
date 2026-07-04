@@ -177,6 +177,9 @@ ipcMain.handle('gps:parseGPX', async (_, gpxPath) => {
 // ── Shell ─────────────────────────────────────────────────────────────────────
 ipcMain.handle('shell:openPath', (_, p) => shell.openPath(p));
 
+// ── App version (always available, even before updater initialises) ─────────
+ipcMain.handle('updater:version', () => app.getVersion());
+
 // ── Export ────────────────────────────────────────────────────────────────────
 ipcMain.handle('export:start', async (_, options) => {
   return runExport(options);
@@ -591,7 +594,6 @@ function setupAutoUpdater() {
   ipcMain.handle('updater:install',  () => {
     autoUpdater.quitAndInstall(false, true);
   });
-  ipcMain.handle('updater:version',  () => app.getVersion());
 
   // Run first check
   autoUpdater.checkForUpdates().catch(() => {});
